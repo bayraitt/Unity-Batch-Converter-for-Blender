@@ -177,7 +177,14 @@ class U_OT_process_fbx_folder(bpy.types.Operator, ImportHelper):
             bpy.ops.export_scene.fbx(filepath=path_to_export_file, use_selection=True)
 
             # delete the mesh
+            ad = imported_armature.animation_data
+            if ad:
+                if ad.action:
+                    action_name = ad.action.name
+                    bpy.data.actions[action_name].user_clear()
+
             bpy.ops.object.delete(use_global=False)
+
         cmd = ("explorer " + folder)
         subprocess.Popen(cmd)
         return {'FINISHED'}
