@@ -74,6 +74,10 @@ class U_OT_process_fbx_folder(bpy.types.Operator, ImportHelper):
         folder = (os.path.dirname(self.filepath))
         # iterate through the selected files
         for i in self.files:
+            for c in bpy.data.collections:
+                for o in c.objects:
+                    bpy.data.objects.remove(o)
+
             # generate full path to file
             path_to_file = (os.path.join(folder, i.name))
 
@@ -103,7 +107,6 @@ class U_OT_process_fbx_folder(bpy.types.Operator, ImportHelper):
                                      axis_up='Y')
 
             # do stuff to the mesh here
-            imported_armature = ""
             imported_objects = bpy.context.selected_objects
             for ob in imported_objects:
                 bpy.ops.object.select_all(action='DESELECT')
@@ -115,13 +118,13 @@ class U_OT_process_fbx_folder(bpy.types.Operator, ImportHelper):
 
                 # Delete everything but armature
                 if ob.type != 'ARMATURE':
-                    # ob.animation_data_clear()
                     ad = ob.animation_data
                     if ad:
                         if ad.action:
                             action_name = ad.action.name
                             bpy.data.actions[action_name].user_clear()
-                    bpy.ops.object.delete(use_global=False)
+                    if ob.type != 'MESH':
+                        bpy.ops.object.delete(use_global=False)
                 else:
                     imported_armature = ob
 
@@ -133,23 +136,26 @@ class U_OT_process_fbx_folder(bpy.types.Operator, ImportHelper):
             imported_armature.select_set(state=True)
             bpy.context.view_layer.objects.active = imported_armature
 
+            bpy.ops.object.mode_set(mode='POSE')
+
             # clear off scale and position keyframes
             root_bones = [b for b in imported_armature.data.bones if not b.parent]
-            if not keep_anim_scale or not keep_anim_loc:
+            # if not keep_anim_scale or not keep_anim_loc:
                 # bpy.ops.object.mode_set(mode='POSE')
                 # bpy.ops.object.select_all(action='DESELECT')
                 # bpy.ops.pose.select_all(action='DESELECT')
 
                 # imported_armature.select = True
-                bpy.ops.object.mode_set(mode='POSE')
+                # for pb in imported_armature.pose.bones:
+            for pb in root_bones:
                 bpy.ops.pose.select_all(action='DESELECT')
-                for pb in imported_armature.pose.bones:
-                    if pb not in root_bones:
-                        imported_armature.data.bones[pb.name].select = True
-                        if not keep_anim_scale:
-                            bpy.ops.pose.scale_clear()
-                        if not keep_anim_loc:
-                            bpy.ops.pose.loc_clear()
+                # if pb not in root_bones:
+                imported_armature.data.bones[pb.name].select = True
+                if not keep_anim_scale:
+                    bpy.ops.pose.scale_clear()
+                if not keep_anim_loc:
+                    bpy.ops.pose.loc_clear()
+
             bpy.ops.object.mode_set(mode='OBJECT')
 
             # check if actions is empty
