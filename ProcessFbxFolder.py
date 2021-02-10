@@ -115,9 +115,19 @@ class U_OT_process_fbx_folder(bpy.types.Operator, ImportHelper):
 
                 # Delete everything but armature
                 if ob.type != 'ARMATURE':
+                    # ob.animation_data_clear()
+                    ad = ob.animation_data
+                    if ad:
+                        if ad.action:
+                            action_name = ad.action.name
+                            bpy.data.actions[action_name].user_clear()
                     bpy.ops.object.delete(use_global=False)
                 else:
                     imported_armature = ob
+
+            for block in bpy.data.actions:
+                if block.users == 0:
+                    bpy.data.actions.remove(block)
 
             bpy.ops.object.select_all(action='DESELECT')
             imported_armature.select_set(state=True)
@@ -162,8 +172,8 @@ class U_OT_process_fbx_folder(bpy.types.Operator, ImportHelper):
 
             # delete the mesh
             bpy.ops.object.delete(use_global=False)
-            cmd = ("explorer " + folder)
-            subprocess.Popen(cmd)
+        cmd = ("explorer " + folder)
+        subprocess.Popen(cmd)
         return {'FINISHED'}
 
 
