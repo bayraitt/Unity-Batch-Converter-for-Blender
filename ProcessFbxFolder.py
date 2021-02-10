@@ -152,7 +152,7 @@ class U_OT_process_fbx_folder(bpy.types.Operator, ImportHelper):
                 print("no actions")
 
             # print("=======DEBUG: " + scene.name)
-            raise KeyboardInterrupt()
+            # raise KeyboardInterrupt()
 
             # export the armature
             basefilename = os.path.splitext(i.name)[0]
