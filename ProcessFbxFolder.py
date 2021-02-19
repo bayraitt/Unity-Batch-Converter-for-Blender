@@ -63,7 +63,11 @@ class U_OT_process_fbx_folder(bpy.types.Operator, ImportHelper):
 
     export_scale: bpy.props.FloatProperty(name="Export Scale",
                                        description="Scale export units by",
-                                       default=1.0)
+                                       default=100.0)
+
+    combine_meshes: bpy.props.BoolProperty(name="Combine Meshes",
+                                       description="combine meshes into one object",
+                                       default=True)
 
 
     def draw(self, context):
@@ -80,6 +84,7 @@ class U_OT_process_fbx_folder(bpy.types.Operator, ImportHelper):
         layout.prop(self, "export_obj")
         if self.export_obj:
             layout.prop(self, "export_scale")
+            layout.prop(self, "combine_meshes")
 
         layout.prop(self, "export_fbx")
 
@@ -92,7 +97,9 @@ class U_OT_process_fbx_folder(bpy.types.Operator, ImportHelper):
         scene = bpy.context.scene
 
         export_obj = self.export_obj
+
         export_scale = self.export_scale
+        combine_meshes = self.combine_meshes
 
         export_fbx = self.export_fbx
         trim_end_bones = self.trim_end_bones
@@ -236,7 +243,8 @@ class U_OT_process_fbx_folder(bpy.types.Operator, ImportHelper):
                     mesh.select_set(state=True)
                     bpy.context.view_layer.objects.active = mesh
 
-                bpy.ops.object.join()
+                if combine_meshes:
+                    bpy.ops.object.join()
 
                 # print("=======DEBUG: " + scene.name)
                 # raise KeyboardInterrupt()
