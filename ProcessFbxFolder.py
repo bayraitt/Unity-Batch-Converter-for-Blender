@@ -294,7 +294,6 @@ def menu_import_draw(self, context):
 classes = (
     U_MT_BatchSubMenu,
     U_OT_process_fbx_folder,
-    BatchImportOptions,
 )
 
 
@@ -303,7 +302,6 @@ def register():
     for cls in classes:
         register_class(cls)
     bpy.types.TOPBAR_MT_file_import.append(menu_import_draw)
-    bpy.types.Scene.batch_import_options = bpy.props.PointerProperty(type=BatchImportOptions)
 
 
 def unregister():
