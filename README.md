@@ -1,4 +1,4 @@
-# Unity-Mocap-Toolkit-for-Blender
+# Unity-Batch-Converter-for-Blender
 This is a simple batch import/export to process multiple fbx files to remove gimbal flips utilizing the blender import filter.  
 
 usage: file > import > batch > choose fbx files
