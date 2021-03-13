@@ -266,7 +266,7 @@ class U_OT_process_fbx_folder(bpy.types.Operator, ImportHelper):
 
                 bpy.ops.export_scene.fbx(filepath=path_to_export_file,
                                          check_existing=False,
-                                         use_selection=True,
+                                         use_selection=False,
                                          global_scale=1.0,
                                          apply_unit_scale=True,
                                          apply_scale_options='FBX_SCALE_NONE',
