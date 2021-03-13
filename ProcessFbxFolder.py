@@ -1,7 +1,7 @@
 bl_info = {
     'name': 'ProcessFbxFolder',
     'author': 'Bay Raitt',
-    'version': (0, 5),
+    'version': (0, 6.6),
     'blender': (2, 92, 0),
     "description": "Batch process selected fbx files",
     'category': 'Import-Export',
