@@ -26,9 +26,9 @@ from bpy.props import (
 )
 
 
-class U_OT_process_fbx_folder(bpy.types.Operator, ImportHelper):
-    """Process Multiple FBX Files in a folder"""
-    bl_idname = 'import_scene.process_fbx_folder'
+class U_OT_process_fbx_files(bpy.types.Operator, ImportHelper):
+    """Process Multiple FBX Files"""
+    bl_idname = 'import_scene.process_fbx_files'
     bl_label = 'Choose .fbx files'
     bl_options = {'PRESET', 'UNDO'}
     bl_description = "Batch process selected fbx files"
@@ -68,6 +68,8 @@ class U_OT_process_fbx_folder(bpy.types.Operator, ImportHelper):
     combine_meshes: bpy.props.BoolProperty(name="Combine Meshes",
                                        description="combine meshes into one object",
                                        default=True)
+
+
 
 
     def draw(self, context):
@@ -354,13 +356,348 @@ class U_OT_process_fbx_folder(bpy.types.Operator, ImportHelper):
         return {'FINISHED'}
 
 
+
+class U_OT_process_folder_tree(bpy.types.Operator, ImportHelper):
+    """Process Multiple FBX Files in a folder"""
+    bl_idname = 'import_scene.process_folder_tree'
+    bl_label = 'Choose Folder'
+    bl_options = {'PRESET', 'UNDO'}
+    bl_description = "Batch process all files in all folders under selected folder"
+    filepath = bpy.props.StringProperty(name="file path", description="3D Comic webite root folder")
+    filter_glob: StringProperty( default='*.blend', options={'HIDDEN'}, )
+
+    #
+    # files: CollectionProperty(type=bpy.types.PropertyGroup)
+
+    trim_end_bones: bpy.props.BoolProperty(name="Insert End Bones",
+                                           description="trim end bones for maya compatibility",
+                                           default=False)
+
+    keep_anim_scale: bpy.props.BoolProperty(name="Keep Scale Animation",
+                                            description="remove all scale animation channels",
+                                            default=False)
+
+    keep_anim_loc: bpy.props.BoolProperty(name="Keep Position Animation",
+                                          description="remove all location animation channels",
+                                          default=False)
+
+    export_fbx: bpy.props.BoolProperty(name="Export as FBX",
+                                       description="export as fbx files",
+                                       default=True)
+
+    export_obj: bpy.props.BoolProperty(name="Export as OBJ",
+                                       description="export as obj files",
+                                       default=False)
+
+    export_scale: bpy.props.FloatProperty(name="Export Scale",
+                                       description="Scale export units by",
+                                       default=100.0)
+
+    combine_meshes: bpy.props.BoolProperty(name="Combine Meshes",
+                                       description="combine meshes into one object",
+                                       default=True)
+
+    directory = bpy.props.StringProperty(
+        name="Outdir Path",
+        description="Where I will save my stuff"
+        # subtype='DIR_PATH' is not needed to specify the selection mode.
+        # But this will be anyway a directory path.
+        )
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
+
+    def draw(self, context):
+        scene = bpy.context.scene
+        layout = self.layout
+
+        row = layout.row(align=True)
+        box: layout.box()
+        row: box.row()
+        # row.prop(self, "trim_end_bones")
+        # layout.prop(self, "keep_anim_scale")
+        # layout.prop(self, "keep_anim_loc")
+
+        layout.prop(self, "export_obj")
+        if self.export_obj:
+            layout.prop(self, "export_scale")
+            layout.prop(self, "combine_meshes")
+
+        layout.prop(self, "export_fbx")
+
+        if self.export_fbx:
+            layout.prop(self, "trim_end_bones")
+            layout.prop(self, "keep_anim_scale")
+            layout.prop(self, "keep_anim_loc")
+
+    #
+    # filename_ext = "."
+    # use_filter_folder = True
+
+    def execute(self, context):
+        # print("Selected dir: '" + self.directory + "'")
+
+        scene = bpy.context.scene
+        root_folder, extension = os.path.splitext(self.filepath)
+
+        export_obj = self.export_obj
+        export_scale = self.export_scale
+        combine_meshes = self.combine_meshes
+
+        export_fbx = self.export_fbx
+        trim_end_bones = self.trim_end_bones
+        keep_anim_scale = self.keep_anim_scale
+        keep_anim_loc = self.keep_anim_loc
+
+        scene = bpy.context.scene
+        objects = bpy.context.selected_objects
+        if objects is not None:
+            for obj in objects:
+                starting_mode = bpy.context.object.mode
+                if "OBJECT" not in starting_mode:
+                    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+                    bpy.ops.object.select_all(action='DESELECT')
+
+        # get the folder
+        # folder = (os.path.dirname(self.filepath))
+        root_folder, extension = os.path.splitext(self.filepath)
+        # working_folder = root_folder + '_processed'
+        # if os.path.exists(working_folder):
+        #     bpy.context.window_manager.popup_menu(warn_folder_exists, title="Warning", icon='ERROR')
+        # else:
+        #     os.mkdir(working_folder)
+
+        folder = (os.path.dirname(root_folder))
+        # print("Selected dir: '" + folder + "'")
+
+        # files = 0
+        # for file_path in folder:
+        # iterate through the selected files
+
+        if self.export_fbx:
+            extension_string = ".fbx"
+        if self.export_obj:
+            extension_string = ".obj"
+
+        for path, dirs, files in os.walk(folder):
+            for filename in files:
+                if extension_string in filename:
+                    file_path = os.path.abspath(os.path.join(path, filename))
+                    print("Selected file: '" + file_path + "'")
+
+                    try:
+                        for c in bpy.data.collections:
+                            for o in c.objects:
+                                bpy.data.objects.remove(o)
+                    except:
+                        pass
+
+                    # generate full path to file
+                    # path_to_file = (os.path.join(folder, file_path.name))
+
+                    # call obj operator and assign ui values
+                    bpy.ops.import_scene.fbx(filepath=file_path,
+                                             filter_glob='*.fbx',
+                                             ui_tab='MAIN',
+                                             use_manual_orientation=False,
+                                             global_scale=1.0,
+                                             bake_space_transform=False,
+                                             use_custom_normals=True,
+                                             use_image_search=True,
+                                             use_alpha_decals=False,
+                                             decal_offset=0.0,
+                                             use_anim=True,
+                                             anim_offset=1.0,
+                                             use_subsurf=False,
+                                             use_custom_props=True,
+                                             use_custom_props_enum_as_string=True,
+                                             ignore_leaf_bones=trim_end_bones,
+                                             force_connect_children=False,
+                                             automatic_bone_orientation=False,
+                                             primary_bone_axis='Y',
+                                             secondary_bone_axis='X',
+                                             use_prepost_rot=True,
+                                             axis_forward='-Z',
+                                             axis_up='Y')
+
+                    # do stuff to the mesh here
+                    imported_objects = bpy.context.selected_objects
+                    imported_meshes = []
+                    for ob in imported_objects:
+                        bpy.ops.object.select_all(action='DESELECT')
+                        ob.select_set(state=True)
+                        bpy.context.view_layer.objects.active = ob
+
+                        # Check if object is a Mesh
+                        # if ob.type == 'MESH':
+
+                        if export_fbx:
+                            # Delete everything but armature
+                            if ob.type != 'ARMATURE':
+                                ad = ob.animation_data
+                                if ad:
+                                    if ad.action:
+                                        action_name = ad.action.name
+                                        bpy.data.actions[action_name].user_clear()
+                                if ob.type != 'MESH':
+                                    bpy.ops.object.delete(use_global=False)
+                            else:
+                                imported_armature = ob
+
+                        if export_obj:
+                            imported_meshes.append(ob)
+
+                    if export_fbx:
+                        for block in bpy.data.actions:
+                            if block.users == 0:
+                                bpy.data.actions.remove(block)
+
+                        bpy.ops.object.select_all(action='DESELECT')
+                        imported_armature.select_set(state=True)
+                        bpy.context.view_layer.objects.active = imported_armature
+
+                        bpy.ops.object.mode_set(mode='POSE')
+
+                        # clear off scale and position keyframes
+                        root_bones = [b for b in imported_armature.data.bones if not b.parent]
+                        # if not keep_anim_scale or not keep_anim_loc:
+                        # bpy.ops.object.mode_set(mode='POSE')
+                        # bpy.ops.object.select_all(action='DESELECT')
+                        # bpy.ops.pose.select_all(action='DESELECT')
+
+                        # imported_armature.select = True
+                        # for pb in imported_armature.pose.bones:
+                        for pb in root_bones:
+                            bpy.ops.pose.select_all(action='DESELECT')
+                            # if pb not in root_bones:
+                            imported_armature.data.bones[pb.name].select = True
+                            if not keep_anim_scale:
+                                bpy.ops.pose.scale_clear()
+                            if not keep_anim_loc:
+                                bpy.ops.pose.loc_clear()
+
+                        bpy.ops.object.mode_set(mode='OBJECT')
+
+                        # check if actions is empty
+                        if bpy.data.actions:
+                            action_list = [action.frame_range for action in bpy.data.actions]
+                            keys = (sorted(set([item for sublist in action_list for item in sublist])))
+                            scene.frame_start = keys[0]
+                            scene.frame_end = keys[-1]
+                        else:
+                            print("no actions")
+
+                        # print("=======DEBUG: " + scene.name)
+                        # raise KeyboardInterrupt()
+
+                        # export the armature
+                        print(file_path)
+                        basefilename = os.path.splitext(file_path)[0]
+                        print(basefilename)
+                        tmp_path_to_file = (os.path.join(folder, basefilename))
+                        path_to_export_file = (tmp_path_to_file + "_processed.fbx")
+                        ignore_leaf_bones = not trim_end_bones
+                        bpy.ops.export_scene.fbx(filepath=path_to_export_file,
+                                                 check_existing=False,
+                                                 use_selection=True,
+                                                 global_scale=1.0,
+                                                 apply_unit_scale=True,
+                                                 apply_scale_options='FBX_SCALE_NONE',
+                                                 use_space_transform=True,
+                                                 bake_space_transform=False,
+                                                 object_types={'ARMATURE', 'CAMERA', 'EMPTY', 'LIGHT', 'MESH', 'OTHER'},
+                                                 use_mesh_modifiers=True,
+                                                 use_mesh_modifiers_render=True,
+                                                 mesh_smooth_type='OFF',
+                                                 use_subsurf=False,
+                                                 use_mesh_edges=False,
+                                                 use_tspace=False,
+                                                 use_custom_props=False,
+                                                 add_leaf_bones= ignore_leaf_bones,
+                                                 primary_bone_axis='Y',
+                                                 secondary_bone_axis='X',
+                                                 use_armature_deform_only=False,
+                                                 armature_nodetype='NULL',
+                                                 bake_anim=True,
+                                                 bake_anim_use_all_bones=True,
+                                                 bake_anim_use_nla_strips=True,
+                                                 bake_anim_use_all_actions=True,
+                                                 bake_anim_force_startend_keying=True,
+                                                 bake_anim_step=1.0,
+                                                 bake_anim_simplify_factor=0.0,
+                                                 axis_forward='-Z',
+                                                 axis_up='Y')
+
+
+                        # delete the mesh
+                        ad = imported_armature.animation_data
+                        if ad:
+                            if ad.action:
+                                action_name = ad.action.name
+                                bpy.data.actions[action_name].user_clear()
+
+                        bpy.ops.object.delete(use_global=False)
+
+                    if export_obj:
+                        bpy.ops.object.mode_set(mode='OBJECT')
+                        bpy.ops.object.select_all(action='DESELECT')
+                        for mesh in imported_meshes:
+                            mesh.select_set(state=True)
+                            bpy.context.view_layer.objects.active = mesh
+
+                        if combine_meshes:
+                            bpy.ops.object.join()
+
+                        # print("=======DEBUG: " + scene.name)
+                        # raise KeyboardInterrupt()
+
+                        # export the armature
+                        basefilename = os.path.splitext(file_path.name)[0]
+                        tmp_path_to_file = (os.path.join(folder, basefilename))
+                        path_to_export_file = (tmp_path_to_file + "_processed.obj")
+                        bpy.ops.export_scene.obj(filepath=path_to_export_file,
+                                                 check_existing=False,
+                                                 filter_glob='*.obj',
+                                                 use_selection=True,
+                                                 use_animation=False,
+                                                 use_mesh_modifiers=True,
+                                                 use_edges=True,
+                                                 use_smooth_groups=False,
+                                                 use_smooth_groups_bitflags=False,
+                                                 use_normals=True,
+                                                 use_uvs=True,
+                                                 use_materials=True,
+                                                 use_triangles=False,
+                                                 use_nurbs=False,
+                                                 use_vertex_groups=False,
+                                                 use_blen_objects=True,
+                                                 group_by_object=False,
+                                                 group_by_material=False,
+                                                 keep_vertex_order=False,
+                                                 global_scale=export_scale,
+                                                 path_mode='AUTO',
+                                                 axis_forward='-Z',
+                                                 axis_up='Y')
+
+                        # delete the mesh
+                        bpy.ops.object.delete(use_global=False)
+
+        cmd = ("explorer " + folder)
+        subprocess.Popen(cmd)
+        return {'FINISHED'}
+
+
 class U_MT_BatchSubMenu(bpy.types.Menu):
     bl_idname = 'U_MT_BatchSubMenu'
     bl_label = 'Batch'
 
     def draw(self, context):
         layout = self.layout
-        self.layout.operator(U_OT_process_fbx_folder.bl_idname)
+        self.layout.operator(U_OT_process_fbx_files.bl_idname)
+        self.layout.operator(U_OT_process_folder_tree.bl_idname)
 
 
 def menu_import_draw(self, context):
@@ -370,7 +707,8 @@ def menu_import_draw(self, context):
 
 classes = (
     U_MT_BatchSubMenu,
-    U_OT_process_fbx_folder,
+    U_OT_process_fbx_files,
+    U_OT_process_folder_tree,
 )
 
 
