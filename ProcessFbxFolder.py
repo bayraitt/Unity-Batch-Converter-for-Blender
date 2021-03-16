@@ -1,7 +1,7 @@
 bl_info = {
     'name': 'ProcessFbxFolder',
     'author': 'Bay Raitt',
-    'version': (0, 6.7),
+    'version': (0, 6.8),
     'blender': (2, 92, 0),
     "description": "Batch process selected fbx files",
     'category': 'Import-Export',
@@ -368,8 +368,8 @@ class U_OT_process_folder_tree(bpy.types.Operator, ImportHelper):
     bl_idname = 'import_scene.process_folder_tree'
     bl_label = 'Choose Folder'
     bl_options = {'PRESET', 'UNDO'}
-    bl_description = "Batch process all files in all folders under selected folder"
-    filepath = bpy.props.StringProperty(name="file path", description="3D Comic webite root folder")
+    bl_description = "Batch process all files in all folders under selected folder, a copy of the folder named folder_processed will be created next to source folder"
+    filepath = bpy.props.StringProperty(name="file path", description="root folder to process")
     filter_glob: StringProperty( default='*.blend', options={'HIDDEN'}, )
 
     #
